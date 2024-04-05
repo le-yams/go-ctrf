@@ -3,6 +3,9 @@ package ctrf
 import (
 	"bytes"
 	"encoding/json"
+	"gopkg.in/yaml.v3"
+	"os"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +14,7 @@ import (
 func TestRequiredProperties(t *testing.T) {
 	// Arrange
 	report := Report{
-		Results: Results{
+		Results: &Results{
 			Tool: &Tool{
 				Name: "my tool",
 			},
@@ -120,4 +123,49 @@ func prettyJSON(t *testing.T, report Report) string {
 	}
 
 	return string(buffer.Bytes())
+}
+
+type validationTestCase struct {
+	Name           string   `json:"name"          yaml:"name"`
+	Report         string   `json:"report"        yaml:"report"`
+	ExpectedErrors []string `json:"expected_errors" yaml:"expected_errors"`
+}
+
+func TestValidation(t *testing.T) {
+	data, err := os.ReadFile("validation-test-cases.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var testCases []validationTestCase
+	err = yaml.Unmarshal(data, &testCases)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			report := Report{}
+			err = json.Unmarshal([]byte(testCase.Report), &report)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			errs := report.Validate()
+			if len(testCase.ExpectedErrors) == 0 {
+				assert.Nil(t, errs)
+			} else {
+				assert.NotNil(t, errs)
+				for _, expectedError := range testCase.ExpectedErrors {
+
+					found := slices.ContainsFunc(errs, func(err error) bool {
+						return err.Error() == expectedError
+					})
+
+					if !found {
+						t.Error("Expected error not found:", expectedError)
+					}
+				}
+			}
+		})
+	}
 }
