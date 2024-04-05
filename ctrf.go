@@ -5,11 +5,11 @@ type Report struct {
 }
 
 type Results struct {
-	Tool        Tool        `json:"tool"`
-	Summary     Summary     `json:"summary"`
-	Tests       []Test      `json:"tests"`
-	Environment Environment `json:"environment,omitempty"`
-	Extra       interface{} `json:"extra,omitempty"`
+	Tool        *Tool        `json:"tool"`
+	Summary     *Summary     `json:"summary"`
+	Tests       []*Test      `json:"tests"`
+	Environment *Environment `json:"environment,omitempty"`
+	Extra       interface{}  `json:"extra,omitempty"`
 }
 
 type Tool struct {
